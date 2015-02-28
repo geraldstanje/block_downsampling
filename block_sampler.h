@@ -8,7 +8,7 @@
 #include <thread>
 using namespace std;
 
-#define THREADING
+//#define THREADING
 //#define DEBUG_OUTPUT
 
 const int row_dim_index = 0;
@@ -44,12 +44,14 @@ private:
   typedef boost::multi_array<int, 3> array_type;
   typedef typename array_type::index index;
   typedef boost::multi_array_types::index_range range;
-  array_type arr;
+  //array_type arr;
+  vector<array_type> arr{1};
+  unsigned int downsampled_index;
   vector<unsigned int> dim; // stores the dimension of the image: dim[0] = L1, dim[1] = L2, dim[2] = L3
   unsigned int hist_global[256] = {0};
 
 public:
-  BlockSampler(): common_value_original(0), dim{L1, L2, L3} {
+  BlockSampler(): common_value_original(0), downsampled_index(0), dim{L1, L2, L3} {
     if (L3 > 1) {
       block_size = 8;
     }
@@ -60,7 +62,7 @@ public:
       block_size = 2;
     }
 
-    arr.resize(boost::extents[L1][L2][L3]);
+    arr[0].resize(boost::extents[L1][L2][L3]);
   }
 
   int 
@@ -80,7 +82,7 @@ public:
 
   void
   init(int data[]) {
-    arr.assign(data, data + (dim[row_dim_index]*dim[col_dim_index]*dim[depth_dim_index]));
+    arr[0].assign(data, data + (dim[row_dim_index]*dim[col_dim_index]*dim[depth_dim_index]));
   }
 
   void
@@ -88,6 +90,21 @@ public:
     dim[row_dim_index] /= 2;
     dim[col_dim_index] /= 2;
     dim[depth_dim_index] /= 2;
+  }
+
+  void
+  allocNewImg(unsigned int row_size, unsigned int col_size, unsigned int depth_size) {
+    if (row_size == 0) {
+      row_size = 1;
+    }
+    if (col_size == 0) {
+      col_size = 1;
+    }
+    if (depth_size == 0) {
+      depth_size = 1;
+    }
+
+    arr.push_back(array_type(boost::extents[row_size][col_size][depth_size]));
   }
 
   // this functions resamples the original image by l number of times
@@ -99,9 +116,9 @@ public:
     std::vector<std::thread> workers;
     bool calc_common_value_original = true;
 
-    print();
-
     for (int i = 0; i < l; i++) {
+      allocNewImg(rowDim()/2, colDim()/2, depthDim()/2);
+
       // this loop would spin up threads which, runs in parallel
       // rows_per_thread means how many rows a thread will process
       // e.g. rows_per_thread = 4 ... thread0 will process row0, row1, row2, row3
@@ -112,7 +129,7 @@ public:
         }
 
 #ifdef THREADING
-        workers.push_back(std::thread(&BlockSampler::thread_downsample, 
+        workers.push_back(std::thread(&BlockSampler::thread_downsample,
                                       this, 
                                       row,
                                       rows_per_thread, 
@@ -142,12 +159,11 @@ public:
       if (rowDim() < 2 &&
           colDim() < 2 && 
           depthDim() < 2) {
-        print(true);
+        arr[downsampled_index+1][0][0][0] = common_value_original;
         break;
       }
-      else {
-        print();
-      }
+
+      downsampled_index++;
     }
   }
 
@@ -180,18 +196,22 @@ public:
             int col_index = col + block_index[i].col;
             int depth_index = depth + block_index[i].depth;
 
-            incr_hist(arr[row_index][col_index][depth_index], hist);
+            incr_hist(arr[downsampled_index][row_index][col_index][depth_index], hist);
 
 #ifdef DEBUG_OUTPUT
+            assert(row_index < arr[downsampled_index].size());
+            assert(col_index < arr[downsampled_index][row_index].size());
+            assert(depth_index < arr[downsampled_index][row_index][depth_index].size());
+
             {
               std::unique_lock<std::mutex> lck(mtx_stdout);
-              cout << arr[row_index][col_index][depth_index] << ", ";
+              cout << arr[downsampled_index][row_index][col_index][depth_index] << ", ";
             }
 #endif
 
             if (calc_common_value_original) {
               std::unique_lock<std::mutex> lck(mtx);
-              incr_hist(arr[row_index][col_index][depth_index], hist_global);
+              incr_hist(arr[downsampled_index][row_index][col_index][depth_index], hist_global);
             }
           }
 
@@ -200,10 +220,14 @@ public:
             std::unique_lock<std::mutex> lck(mtx_stdout);
             cout << '\n';
           }
+
+          assert((row+start_row)/2 < arr[downsampled_index+1].size());
+          assert(col/2 < arr[downsampled_index+1][(row+start_row)/2].size());
+          assert(depth/2 < arr[downsampled_index+1][(row+start_row)/2][col/2].size());
 #endif
 
           // calculate the mode
-          arr[(row+start_row)/2][col/2][depth/2] = get_most_common_value(hist);
+          arr[downsampled_index+1][(row+start_row)/2][col/2][depth/2] = get_most_common_value(hist);
         }
       }
     }
@@ -220,37 +244,39 @@ public:
   }
 
   void
-  print(bool print_common_value_original=false) {
-    if (print_common_value_original) {
-      cout << common_value_original << endl;
+  print(int img_index) {
+    if (arr[img_index][0].size() <= 1) {
+      for(index i = 0; i != arr[img_index].size(); ++i) {
+        cout << arr[img_index][i][0][0] << ' ';
+      }
+      cout << "\n\n";
+    }
+    else if (arr[img_index][0][0].size() <= 1) {
+      for(index i = 0; i != arr[img_index].size(); ++i) {
+        for(index j = 0; j != arr[img_index][i].size(); ++j) {
+          cout << arr[img_index][i][j][0] << ' ';
+        }
+        cout << '\n';
+      }
+      cout << '\n';
     }
     else {
-      if (dim[col_dim_index] <= 1) {
-        for(index i = 0; i != dim[row_dim_index]; ++i) {
-          cout << arr[i][0][0] << ' ';
-        }
-        cout << "\n\n";
-      }
-      else if (dim[depth_dim_index] <= 1) {
-        for(index i = 0; i != dim[row_dim_index]; ++i) {
-          for(index j = 0; j != dim[col_dim_index]; ++j) {
-            cout << arr[i][j][0] << ' ';
+      for(index i = 0; i !=  arr[img_index].size(); ++i) {
+        for(index j = 0; j != arr[img_index][i].size(); ++j) {
+          for(index k = 0; k != arr[img_index][i][j].size(); ++k) {
+            cout << arr[img_index][i][j][k] << ' ';
           }
           cout << '\n';
         }
         cout << '\n';
       }
-      else {
-        for(index i = 0; i != dim[row_dim_index]; ++i) {
-          for(index j = 0; j != dim[col_dim_index]; ++j) {
-            for(index k = 0; k != dim[depth_dim_index]; ++k) {
-              cout << arr[i][j][k] << ' ';
-            }
-            cout << '\n';
-          }
-          cout << '\n';
-        }
-      }
+    }
+  }
+
+  void
+  print_imgs() {
+    for (int i = 0; i < arr.size(); i++) {
+      print(i);
     }
   }
 };

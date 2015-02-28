@@ -1,6 +1,6 @@
 #include "block_sampler.h"
 
-const int test_example = 1;
+const int test_example = 3;
 
 void createData(int *data, int size) {
   for (int i = 0; i < size; i++) {
@@ -20,6 +20,7 @@ main() {
     //createData(data, 8);
     b.init(data);
     b.downsample(4);
+    b.print_imgs();
   }
   else if (test_example == 2) {
     BlockSampler<4,8,1> b;
@@ -33,6 +34,7 @@ main() {
 
     b.init(data);
     b.downsample(4);
+    b.print_imgs();
   }
   else if (test_example == 3) {
     BlockSampler<8,8,1> b;
@@ -50,6 +52,7 @@ main() {
 
     b.init(data);
     b.downsample(4);
+    b.print_imgs();
   }
   else if (test_example == 4) {
     BlockSampler<4,4,4> b;
@@ -81,5 +84,6 @@ main() {
     //createData(data, 64);
     b.init(data);
     b.downsample(4);
+    b.print_imgs();
   }
 }
