@@ -225,26 +225,32 @@ public:
       cout << common_value_original << endl;
     }
     else {
-      for(index i = 0; i != dim[row_dim_index]; ++i) {
-        if (dim[col_dim_index] <= 1) {
+      if (dim[col_dim_index] <= 1) {
+        for(index i = 0; i != dim[row_dim_index]; ++i) {
           cout << arr[i][0][0] << ' ';
         }
-        else {  
+        cout << "\n\n";
+      }
+      else if (dim[depth_dim_index] <= 1) {
+        for(index i = 0; i != dim[row_dim_index]; ++i) {
           for(index j = 0; j != dim[col_dim_index]; ++j) {
-            if (dim[depth_dim_index] <= 1) {
-              cout << arr[i][j][0] << ' ';
-            }
-            else {
-              for(index k = 0; k != dim[depth_dim_index]; ++k) { 
-                cout << arr[i][j][k] << ' ';
-              }
-              cout << '\n';
+            cout << arr[i][j][0] << ' ';
+          }
+          cout << '\n';
+        }
+        cout << '\n';
+      }
+      else {
+        for(index i = 0; i != dim[row_dim_index]; ++i) {
+          for(index j = 0; j != dim[col_dim_index]; ++j) {
+            for(index k = 0; k != dim[depth_dim_index]; ++k) {
+              cout << arr[i][j][k] << ' ';
             }
           }
           cout << '\n';
         }
+        cout << '\n';
       }
-      cout << '\n';
     }
   }
 };
