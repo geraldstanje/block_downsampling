@@ -27,7 +27,7 @@ template <size_t L1, const size_t L2, const size_t L3>
 class BlockSampler {
 private:
   unsigned int common_value_original;
-  std::mutex mtx;
+  std::mutex mtx; // to synchronize access to common_value_original
   std::mutex mtx_stdout;
   unsigned int block_size; // the block_size will be set based on the number of dimensions of the array
   // these are the indices for the block, max block_size is 8 (3 dim array)
@@ -45,12 +45,15 @@ private:
   typedef typename array_type::index index;
   typedef boost::multi_array_types::index_range range;
   vector<array_type> arr;
-  unsigned int downsampled_index; // represents the current index of the current processed image with in the arr vector
-  vector<unsigned int> dim; // stores the current dimension of the image, at construction dim[0] = L1, dim[1] = L2, dim[2] = L3
+  unsigned int curr_processed_img; // represents the current index of the current processed image with in the arr vector
+  vector<unsigned int> dim; // stores the current dimension of the image to be processed, at construction dim[0] = L1, dim[1] = L2, dim[2] = L3
   unsigned int hist_global[256] = {0};
 
 public:
-  BlockSampler(): common_value_original(0), arr{1}, downsampled_index(0), dim{L1, L2, L3} {
+  BlockSampler(): common_value_original(0), 
+                  arr{1}, // allocate memory for the original image
+                  curr_processed_img(0), 
+                  dim{L1, L2, L3} {
     if (L3 > 1) {
       block_size = 8;
     }
@@ -130,8 +133,7 @@ public:
 
 #ifdef THREADING
         workers.push_back(std::thread(&BlockSampler::thread_downsample,
-                                      this, 
-                                      downsampled_index,
+                                      this,
                                       row,
                                       rows_per_thread, 
                                       colDim(), 
@@ -160,11 +162,11 @@ public:
       if (rowDim() < 2 &&
           colDim() < 2 && 
           depthDim() < 2) {
-        arr[downsampled_index+1][0][0][0] = common_value_original;
+        arr[curr_processed_img+1][0][0][0] = common_value_original;
         break;
       }
 
-      downsampled_index++;
+      curr_processed_img++;
     }
   }
 
@@ -172,8 +174,7 @@ public:
   // it calculates the mode of each block
   // and it also calculates the mode of the original image and stores it in the common_value_original variable
   void
-  thread_downsample(const int &downsampled_index,
-                    const int &start_row, 
+  thread_downsample(const int &start_row, 
                     const int &rows_per_thread,
                     const int &col_size, 
                     const int &depth_size, 
@@ -205,11 +206,11 @@ public:
             }
 #endif
 
-            incr_hist(arr[downsampled_index][row_index][col_index][depth_index], hist);
+            incr_hist(arr[curr_processed_img][row_index][col_index][depth_index], hist);
 
             if (calc_common_value_original) {
               std::unique_lock<std::mutex> lck(mtx);
-              incr_hist(arr[downsampled_index][row_index][col_index][depth_index], hist_global);
+              incr_hist(arr[curr_processed_img][row_index][col_index][depth_index], hist_global);
             }
           }
 
@@ -221,7 +222,7 @@ public:
 #endif
 
           // calculate the mode
-          arr[downsampled_index+1][(row+start_row)/2][col/2][depth/2] = get_most_common_value(hist);
+          arr[curr_processed_img+1][(row+start_row)/2][col/2][depth/2] = get_most_common_value(hist);
         }
       }
     }
