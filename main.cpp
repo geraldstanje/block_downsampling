@@ -1,6 +1,6 @@
 #include "block_sampler.h"
 
-const int test_example = 3;
+const int test_example = 4;
 
 void createData(int *data, int size) {
   for (int i = 0; i < size; i++) {
