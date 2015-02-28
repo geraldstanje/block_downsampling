@@ -91,6 +91,7 @@ public:
     dim[depth_dim_index] /= 2;
   }
 
+  // allocate memory for the downsampled image
   void
   allocNewImg(unsigned int row_size, unsigned int col_size, unsigned int depth_size) {
     if (row_size == 0) {
@@ -130,6 +131,7 @@ public:
 #ifdef THREADING
         workers.push_back(std::thread(&BlockSampler::thread_downsample,
                                       this, 
+                                      downsampled_index,
                                       row,
                                       rows_per_thread, 
                                       colDim(), 
@@ -170,7 +172,8 @@ public:
   // it calculates the mode of each block
   // and it also calculates the mode of the original image and stores it in the common_value_original variable
   void
-  thread_downsample(const int &start_row, 
+  thread_downsample(const int &downsampled_index,
+                    const int &start_row, 
                     const int &rows_per_thread,
                     const int &col_size, 
                     const int &depth_size, 
