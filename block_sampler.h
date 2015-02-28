@@ -8,7 +8,7 @@
 #include <thread>
 using namespace std;
 
-//#define THREADING
+#define THREADING
 //#define DEBUG_OUTPUT
 
 const int row_dim_index = 0;
@@ -246,10 +246,10 @@ public:
             for(index k = 0; k != dim[depth_dim_index]; ++k) {
               cout << arr[i][j][k] << ' ';
             }
+            cout << '\n';
           }
           cout << '\n';
         }
-        cout << '\n';
       }
     }
   }
