@@ -10,7 +10,7 @@
 #include "array.h"
 
 #define BENCHMARKING
-const uint32_t NUMBER_OF_THREADS = 1;
+const uint32_t NUMBER_OF_THREADS = 2;
 
 class block_description {
 public:
@@ -37,31 +37,35 @@ public:
                        col(0),
                        depth(0),
                        blocksize(0) {}
+
+  block_description(const block_description &copy): downsampled_index(copy.downsampled_index), 
+                                                    downsampled_block_index(copy.downsampled_block_index), 
+                                                    row(copy.row), 
+                                                    col(copy.col),
+                                                    depth(copy.depth),
+                                                    blocksize(copy.blocksize) {}
 };
 
 class BlockDownSampler {
 protected:
   array orignal;
   std::vector<array> downsampled;
-  std::mutex mtx_queue;
-  std::mutex mtx_downsampled;
-  std::queue<block_description> q;
+  std::vector<std::queue<block_description>> vec_queue;
   uint32_t dim;
 
 private:
   virtual void alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) = 0;
   virtual bool can_stop(uint32_t blocksize) = 0;
-  virtual void insert_blocks_to_queue(uint32_t downsampled_index, uint32_t blocksize) = 0;
+  virtual void insert_blocks_to_queue(std::queue<block_description> &my_queue, uint32_t num_of_blocks_pre_thread, uint32_t num_of_blocks, uint32_t downsampled_index, uint32_t blocksize) = 0;
+  virtual uint32_t get_num_of_blocks(uint32_t l) = 0;
 
   void
-  thread_downsample(uint32_t num_of_blocks) {
-    while (num_of_blocks) {
-      block_description block;
-      {
-        std::unique_lock<std::mutex> lck(mtx_queue);
-        block = q.front();
-        q.pop();
-      }
+  thread_downsample(uint32_t thread_id) {
+    std::queue<block_description> block_queue = vec_queue[thread_id];
+
+    while (!block_queue.empty()) {
+      block_description block(block_queue.front());
+      block_queue.pop();
 
       uint32_t mode = 0;
       if (dim == 1) {
@@ -74,30 +78,18 @@ private:
         mode = orignal.get_mode_of_block_3d(block.row, block.col, block.depth, block.blocksize, block.blocksize, block.blocksize);
       }
 
-      {
-        std::unique_lock<std::mutex> lck(mtx_downsampled);
-        downsampled[block.downsampled_index][block.downsampled_block_index] = mode;
-      }
-
-      num_of_blocks--;
+      downsampled[block.downsampled_index][block.downsampled_block_index] = mode;
     }
   }
 
   void 
   process_blocks() {
     std::vector<std::thread> workers;
-    uint32_t num_of_blocks_pre_thread = q.size() / NUMBER_OF_THREADS;
-    uint32_t remaining_blocks = q.size() % NUMBER_OF_THREADS;
-
+    
     for (uint32_t i = 0; i < NUMBER_OF_THREADS; i++) {
-      uint32_t num_of_blocks_to_process = num_of_blocks_pre_thread;
-      if (i == NUMBER_OF_THREADS-1) {
-        num_of_blocks_to_process += remaining_blocks;
-      }
-
       workers.push_back(std::thread(&BlockDownSampler::thread_downsample,
                                     this,
-                                    num_of_blocks_to_process));
+                                    i)); // i is the thread_id
     }
 
     for (std::thread &t: workers) {
@@ -118,19 +110,41 @@ public:
     orignal.insert(in);
   }
 
+  void 
+  push_remaining_to_vec_queue(const uint32_t remaining_blocks, std::queue<block_description> &my_queue) {
+    if (remaining_blocks > 0) {
+      auto it = --vec_queue.end();
+      if (vec_queue.empty()) { //it == vec_queue.end()) {
+        vec_queue.push_back(my_queue);
+      }
+      else {
+        while (!my_queue.empty()) {
+          auto front = my_queue.front();
+          my_queue.pop();
+          it->push(front);
+        }
+      }
+    }
+  }
+
   void
   downsample(uint32_t l) {
     uint32_t blocksize = 2;
+    uint32_t j = 0;
+    std::queue<block_description> my_queue;
+    uint32_t num_of_blocks = get_num_of_blocks(l);
+    uint32_t num_of_blocks_pre_thread = num_of_blocks / NUMBER_OF_THREADS;
+    uint32_t remaining_blocks = num_of_blocks % NUMBER_OF_THREADS;
+
     downsampled.resize(l);
 
 #ifdef BENCHMARKING
   auto start = std::chrono::steady_clock::now();
 #endif
 
-    uint32_t j = 0;
     for (j = 0; j < l; j++) {
       alloc_downsampled_img(j, blocksize);
-      insert_blocks_to_queue(j, blocksize);
+      insert_blocks_to_queue(my_queue, num_of_blocks_pre_thread, num_of_blocks, j, blocksize);
 
       if (can_stop(blocksize) == true) {
         break;
@@ -139,6 +153,8 @@ public:
       blocksize *= 2;
     }
     
+
+    push_remaining_to_vec_queue(remaining_blocks, my_queue);
     process_blocks();
 
 #ifdef BENCHMARKING
@@ -171,14 +187,12 @@ private:
     downsampled[downsampled_index] = array(orignal.row_size() / resize_factor);
   }
 
-  void 
-  insert_blocks_to_queue(uint32_t downsampled_index, uint32_t blocksize) {
-    uint32_t index = 0;
+  uint32_t get_num_of_blocks() {
+    return 0;
+  }
 
-    for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
-      q.push(block_description(downsampled_index, index, row, 0, 0, blocksize));
-      index++;
-    }
+  void 
+  insert_blocks_to_queue(std::queue<block_description> &my_queue, uint32_t num_of_blocks_pre_thread, uint32_t num_of_blocks, uint32_t downsampled_index, uint32_t blocksize) {
   }
 
   bool
@@ -202,15 +216,42 @@ private:
     downsampled[downsampled_index] = array(orignal.row_size() / resize_factor, 
                                            orignal.col_size() / resize_factor); 
   }
+ 
+  uint32_t 
+  get_num_of_blocks(uint32_t l) {
+    uint32_t count  = 0;
+    uint32_t blocksize = 2;
+
+    for (uint32_t j = 0; j < l; j++) {
+      for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
+        for (uint32_t col = 0; col < orignal.col_size(); col+=blocksize) {
+          count++;
+        }
+      }
+
+      if (can_stop(blocksize) == true) {
+        break;
+      }
+        
+      blocksize *= 2;
+    }
+
+    return count;
+ }
 
  void 
-  insert_blocks_to_queue(uint32_t downsampled_index, uint32_t blocksize) {
+  insert_blocks_to_queue(std::queue<block_description> &my_queue, uint32_t num_of_blocks_pre_thread, uint32_t num_of_blocks, uint32_t downsampled_index, uint32_t blocksize) {
     uint32_t index = 0;
 
     for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
       for (uint32_t col = 0; col < orignal.col_size(); col+=blocksize) {
-        q.push(block_description(downsampled_index, index, row, col, 0, blocksize));
+        my_queue.push(block_description(downsampled_index, index, row, col, 0, blocksize));
         index++;
+
+        if (my_queue.size() == num_of_blocks_pre_thread) {
+          vec_queue.push_back(my_queue);
+          while(!my_queue.empty()) my_queue.pop();
+        }
       }
     }
   }
@@ -239,18 +280,12 @@ private:
                                            orignal.depth_size() / resize_factor);
   }
 
-  void 
-  insert_blocks_to_queue(uint32_t downsampled_index, uint32_t blocksize) {
-    uint32_t index = 0;
+  uint32_t get_num_of_blocks() {
+    return 0;
+  }
 
-    for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
-      for (uint32_t col = 0; col < orignal.col_size(); col+=blocksize) {
-        for (uint32_t depth = 0; col < orignal.depth_size(); depth+=blocksize) {
-          q.push(block_description(downsampled_index, index, row, col, depth, blocksize));
-          index++;
-        }
-      }
-    }
+  void 
+  insert_blocks_to_queue(std::queue<block_description> &my_queue, uint32_t num_of_blocks_pre_thread, uint32_t num_of_blocks, uint32_t downsampled_index, uint32_t blocksize) {
   }
 
   bool
