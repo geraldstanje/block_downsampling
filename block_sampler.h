@@ -91,7 +91,6 @@ class BlockDownSampler1d : public BlockDownSampler {
 private:
   void 
   alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) {
-    std::unique_lock<std::mutex> lck(mtx);
     downsampled[downsampled_index] = array(orignal.row_size() / resize_factor);
   }
 
@@ -99,10 +98,16 @@ private:
   calc_mode_for_all_blocks(uint32_t downsampled_index, uint32_t blocksize) {
     uint32_t index = 0;
     
+    array *data;
+    {
+      std::unique_lock<std::mutex> lck(mtx);
+      data = &downsampled[downsampled_index];
+    }
+
     for (int row = 0; row < orignal.row_size(); row+=blocksize) {
       uint32_t mode = orignal.get_mode_of_block_1d(row, 0, blocksize);
       std::unique_lock<std::mutex> lck(mtx);
-      (downsampled[downsampled_index])[index] = mode;
+      (*data)[index] = mode;
       index++;
     }
   }
@@ -125,7 +130,6 @@ class BlockDownSampler2d : public BlockDownSampler {
 private:
   void 
   alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) {
-    std::unique_lock<std::mutex> lck(mtx);
     downsampled[downsampled_index] = array(orignal.row_size() / resize_factor, 
                                            orignal.col_size() / resize_factor); 
   }
@@ -168,7 +172,6 @@ class BlockDownSampler3d : public BlockDownSampler {
 private:
   void 
   alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) {
-    std::unique_lock<std::mutex> lck(mtx);
     downsampled[downsampled_index] = array(orignal.row_size() / resize_factor, 
                                            orignal.col_size() / resize_factor,
                                            orignal.depth_size() / resize_factor);
@@ -178,12 +181,18 @@ private:
   calc_mode_for_all_blocks(uint32_t downsampled_index, uint32_t blocksize) {
     uint32_t index = 0;
     
+    array *data;
+    {
+      std::unique_lock<std::mutex> lck(mtx);
+      data = &downsampled[downsampled_index];
+    }
+
     for (int row = 0; row < orignal.row_size(); row+=blocksize) {
       for (int col = 0; col < orignal.col_size(); col+=blocksize) {
         for (int depth = 0; depth < orignal.depth_size(); depth+=blocksize) {
           uint32_t mode = orignal.get_mode_of_block_3d(row, col, depth, blocksize, blocksize, blocksize);
           std::unique_lock<std::mutex> lck(mtx);
-          (downsampled[downsampled_index])[index] = mode;
+          (*data)[index] = mode;
           index++;
         }
       }
