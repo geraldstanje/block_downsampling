@@ -7,7 +7,7 @@
 #include <thread>
 #include "array.h"
 
-#define THREADING
+//#define THREADING
 
 class BlockDownSampler {
 protected:
@@ -48,7 +48,7 @@ public:
                                     blocksize)); 
 #else
       alloc_downsampled_img(orignal.get_sizes(), blocksize);
-      calc_mode_for_all_blocks(blocksize);
+      calc_mode_for_all_blocks(i, blocksize);
 #endif
 
       if (check_stop(blocksize) == true) {
