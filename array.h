@@ -14,9 +14,16 @@ private:
   size_t dim;
 
 public:
-  array(size_t L1): data(L1, 0), sizes{L1}, dim(1) {}
-  array(size_t L1, size_t L2): data(L1*L2, 0), sizes{L1, L2}, dim(2) {}
-  array(size_t L1, size_t L2, size_t L3): data(L1*L2*L3, 0), sizes{L1, L2, L3}, dim(3) {}
+  array(): dim(0) {}
+  array(size_t l1): data(l1, 0), 
+                    sizes{l1}, 
+                    dim(1) {}
+  array(size_t l1, size_t l2): data(l1*l2, 0), 
+                               sizes{l1, l2}, 
+                               dim(2) {}
+  array(size_t l1, size_t l2, size_t l3): data(l1*l2*l3, 0), 
+                                          sizes{l1, l2, l3}, 
+                                          dim(3) {}
   
   void swap(array &other) {
     std::swap(data, other.data);
@@ -65,6 +72,10 @@ public:
   get_total_size() {
     size_t total = 1;
     
+    if (sizes.size() == 0) {
+      return 0;
+    }
+
     for (size_t i = 0; i < sizes.size(); i++) {
       total *= sizes[i];
     }
