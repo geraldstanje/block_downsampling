@@ -18,7 +18,7 @@ public:
   array(size_t L1, size_t L2): data(L1*L2, 0), sizes{L1, L2}, dim(2) {}
   array(size_t L1, size_t L2, size_t L3): data(L1*L2*L3, 0), sizes{L1, L2, L3}, dim(3) {}
   
-  /*void swap(array &other) {
+  void swap(array &other) {
     std::swap(data, other.data);
     std::swap(sizes, other.sizes);
     std::swap(strides, other.strides);
@@ -26,16 +26,15 @@ public:
   }
  
   array &operator=(array other) {
-    std::swap(other);
+    swap(other);
     return *this;
   }
-    
+  
   array(const array &copy): data(copy.data), 
                             sizes(copy.sizes), 
                             strides(copy.strides), 
                             dim(copy.dim) {}
-  */
-                            
+
   std::vector<size_t> 
   get_sizes() {
     return sizes;
@@ -51,6 +50,11 @@ public:
     return sizes[1];
   }
   
+  uint32_t
+  depth_size() {
+    return sizes[2];
+  }
+
   uint32_t 
   &operator[](uint32_t index) {
     return data[index];
