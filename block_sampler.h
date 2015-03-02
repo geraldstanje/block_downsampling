@@ -86,10 +86,10 @@ private:
   process_blocks() {
     std::vector<std::thread> workers;
     
-    for (uint32_t i = 0; i < NUMBER_OF_THREADS; i++) {
+    for (uint32_t thread_id = 0; thread_id < NUMBER_OF_THREADS; thread_id++) {
       workers.push_back(std::thread(&BlockDownSampler::thread_downsample,
                                     this,
-                                    i)); // i is the thread_id
+                                    thread_id));
     }
 
     for (std::thread &t: workers) {
@@ -113,11 +113,14 @@ public:
   void 
   push_remaining_to_vec_queue(const uint32_t remaining_blocks, std::queue<block_description> &my_queue) {
     if (remaining_blocks > 0) {
-      auto it = --vec_queue.end();
-      if (vec_queue.empty()) { //it == vec_queue.end()) {
+      auto it = vec_queue.end();
+
+      if (it == vec_queue.end()) {
         vec_queue.push_back(my_queue);
       }
       else {
+        --it; // get last element
+
         while (!my_queue.empty()) {
           auto front = my_queue.front();
           my_queue.pop();
