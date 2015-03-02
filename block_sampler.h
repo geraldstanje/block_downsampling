@@ -6,9 +6,11 @@
 #include <algorithm>
 #include <thread>
 #include <queue>
+#include <chrono>
 #include "array.h"
 
-const uint32_t NUMBER_OF_THREADS = 2;
+#define BENCHMARKING
+const uint32_t NUMBER_OF_THREADS = 3;
 
 class block_description {
 public:
@@ -121,6 +123,10 @@ public:
     uint32_t blocksize = 2;
     downsampled.resize(l);
 
+#ifdef BENCHMARKING
+  auto start = std::chrono::steady_clock::now();
+#endif
+
     uint32_t j = 0;
     for (j = 0; j < l; j++) {
       alloc_downsampled_img(j, blocksize);
@@ -134,6 +140,13 @@ public:
     }
     
     process_blocks();
+
+#ifdef BENCHMARKING
+  auto end = std::chrono::steady_clock::now();
+  auto diff = end - start; 
+  std::cerr << '\n' << std::chrono::duration <double, std::milli> (diff).count() << "\n\n";
+#endif
+
     downsampled.resize(j+1);
   }
   
