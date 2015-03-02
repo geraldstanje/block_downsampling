@@ -47,7 +47,7 @@ protected:
 
 private:
   virtual void alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) = 0;
-  virtual bool check_stop(uint32_t blocksize) = 0;
+  virtual bool can_stop(uint32_t blocksize) = 0;
   virtual void insert_blocks_to_queue(uint32_t downsampled_index, uint32_t blocksize) = 0;
 
   void
@@ -116,7 +116,7 @@ public:
       alloc_downsampled_img(j, blocksize);
       insert_blocks_to_queue(j, blocksize);
 
-      if (check_stop(blocksize) == true) {
+      if (can_stop(blocksize) == true) {
         break;
       }
       
@@ -159,7 +159,7 @@ private:
   }
 
   bool
-  check_stop(uint32_t blocksize) {
+  can_stop(uint32_t blocksize) {
     if (orignal.row_size()/blocksize == 1) {
       return true;
     }
@@ -193,7 +193,7 @@ private:
   }
 
   bool
-  check_stop(uint32_t blocksize) {
+  can_stop(uint32_t blocksize) {
     if (orignal.row_size()/blocksize == 1 || 
         orignal.col_size()/blocksize == 1) {
       return true;
@@ -231,7 +231,7 @@ private:
   }
 
   bool
-  check_stop(uint32_t blocksize) {
+  can_stop(uint32_t blocksize) {
     if (orignal.row_size()/blocksize == 1 || 
         orignal.col_size()/blocksize == 1 ||
         orignal.depth_size()/blocksize == 1) {
