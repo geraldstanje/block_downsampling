@@ -141,10 +141,6 @@ public:
 
     downsampled.resize(l);
 
-#ifdef BENCHMARKING
-  auto start = std::chrono::steady_clock::now();
-#endif
-
     for (j = 0; j < l; j++) {
       alloc_downsampled_img(j, blocksize);
       insert_blocks_to_queue(my_queue, num_of_blocks_pre_thread, num_of_blocks, j, blocksize);
@@ -155,9 +151,13 @@ public:
       
       blocksize *= 2;
     }
-    
 
     push_remaining_to_vec_queue(remaining_blocks, my_queue);
+
+#ifdef BENCHMARKING
+  auto start = std::chrono::steady_clock::now();
+#endif
+
     process_blocks();
 
 #ifdef BENCHMARKING
