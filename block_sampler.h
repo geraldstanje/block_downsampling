@@ -41,10 +41,10 @@ public:
   downsample(int l) {
     std::vector<std::thread> workers;
     uint32_t blocksize = 2;
+    downsampled.resize(l);
 
-    //downsampled.resize(l);
-
-    for (int i = 0; i < l; i++) {
+    uint32_t i = 0;
+    for (i = 0; i < l; i++) {
 #ifdef THREADING
       workers.push_back(std::thread(&BlockDownSampler::thread_downsample,
                                     this,
@@ -69,6 +69,8 @@ public:
       }
     }
 #endif
+
+    downsampled.resize(i+1);
   }
   
   void 
@@ -90,8 +92,7 @@ private:
   void 
   alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) {
     std::unique_lock<std::mutex> lck(mtx);
-    //downsampled[downsampled_index] = array(orignal.row_size() / resize_factor);
-    downsampled.push_back(array(orignal.row_size() / resize_factor)); 
+    downsampled[downsampled_index] = array(orignal.row_size() / resize_factor);
   }
 
   void 
@@ -125,10 +126,8 @@ private:
   void 
   alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) {
     std::unique_lock<std::mutex> lck(mtx);
-    //downsampled[downsampled_index] = array(orignal.row_size() / resize_factor, 
-    //                                       orignal.col_size() / resize_factor); 
-    downsampled.push_back(array(orignal.row_size() / resize_factor, 
-                                orignal.col_size() / resize_factor)); 
+    downsampled[downsampled_index] = array(orignal.row_size() / resize_factor, 
+                                           orignal.col_size() / resize_factor); 
   }
 
   void 
@@ -170,13 +169,9 @@ private:
   void 
   alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) {
     std::unique_lock<std::mutex> lck(mtx);
-    //downsampled[downsampled_index] = array(orignal.row_size() / resize_factor, 
-    //                                       orignal.col_size() / resize_factor,
-    //                                       orignal.depth_size() / resize_factor); 
-
-    downsampled.push_back(array(orignal.row_size() / resize_factor, 
-                                orignal.col_size() / resize_factor,
-                                orignal.depth_size() / resize_factor)); 
+    downsampled[downsampled_index] = array(orignal.row_size() / resize_factor, 
+                                           orignal.col_size() / resize_factor,
+                                           orignal.depth_size() / resize_factor);
   }
 
   void 
