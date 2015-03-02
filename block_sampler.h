@@ -16,13 +16,13 @@ protected:
   std::mutex mtx;
 
 private:
-  virtual void alloc_downsampled_img(uint32_t resize_factor) = 0;
+  virtual void alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) = 0;
   virtual void calc_mode_for_all_blocks(uint32_t downsampled_index, uint32_t blocksize) = 0;
   virtual bool check_stop(uint32_t blocksize) = 0 ;
   
   void
   thread_downsample(uint32_t downsampled_index, uint32_t blocksize) {
-    alloc_downsampled_img(blocksize);
+    alloc_downsampled_img(downsampled_index, blocksize);
     calc_mode_for_all_blocks(downsampled_index, blocksize);
   }
 
@@ -41,7 +41,9 @@ public:
   downsample(int l) {
     std::vector<std::thread> workers;
     uint32_t blocksize = 2;
-    
+
+    downsampled.resize(l);
+
     for (int i = 0; i < l; i++) {
 #ifdef THREADING
       workers.push_back(std::thread(&BlockDownSampler::thread_downsample,
@@ -49,7 +51,7 @@ public:
                                     i,
                                     blocksize)); 
 #else
-      alloc_downsampled_img(blocksize);
+      alloc_downsampled_img(i, blocksize);
       calc_mode_for_all_blocks(i, blocksize);
 #endif
 
@@ -86,8 +88,10 @@ template <const size_t L1>
 class BlockDownSampler1d : public BlockDownSampler {
 private:
   void 
-  alloc_downsampled_img(uint32_t resize_factor) {
-    downsampled.push_back(array(orignal.row_size() / resize_factor)); 
+  alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) {
+    std::unique_lock<std::mutex> lck(mtx);
+    downsampled[downsampled_index] = array(orignal.row_size() / resize_factor);
+    //downsampled.push_back(array(orignal.row_size() / resize_factor)); 
   }
 
   void 
@@ -119,20 +123,28 @@ template <const size_t L1, const size_t L2>
 class BlockDownSampler2d : public BlockDownSampler {
 private:
   void 
-  alloc_downsampled_img(uint32_t resize_factor) {
-    downsampled.push_back(array(orignal.row_size() / resize_factor, 
-                                orignal.col_size() / resize_factor)); 
+  alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) {
+    std::unique_lock<std::mutex> lck(mtx);
+    downsampled[downsampled_index] = array(orignal.row_size() / resize_factor, 
+                                           orignal.col_size() / resize_factor); 
+    //downsampled.push_back(array(orignal.row_size() / resize_factor, 
+    //                            orignal.col_size() / resize_factor)); 
   }
 
   void 
   calc_mode_for_all_blocks(uint32_t downsampled_index, uint32_t blocksize) {
     uint32_t index = 0;
     
+    array *data;
+    {
+      std::unique_lock<std::mutex> lck(mtx);
+      data = &downsampled[downsampled_index];
+    }
+
     for (int row = 0; row < orignal.row_size(); row+=blocksize) {
       for (int col = 0; col < orignal.col_size(); col+=blocksize) {
         uint32_t mode = orignal.get_mode_of_block_2d(row, col, blocksize, blocksize);
-        std::unique_lock<std::mutex> lck(mtx);
-        (downsampled[downsampled_index])[index] = mode;
+        (*data)[index] = mode;
         index++;
       }
     }
@@ -156,10 +168,15 @@ template <const size_t L1, const size_t L2, const size_t L3>
 class BlockDownSampler3d : public BlockDownSampler {
 private:
   void 
-  alloc_downsampled_img(uint32_t resize_factor) {
-    downsampled.push_back(array(orignal.row_size() / resize_factor, 
-                                orignal.col_size() / resize_factor,
-                                orignal.depth_size() / resize_factor)); 
+  alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) {
+    std::unique_lock<std::mutex> lck(mtx);
+    downsampled[downsampled_index] = array(orignal.row_size() / resize_factor, 
+                                           orignal.col_size() / resize_factor,
+                                           orignal.depth_size() / resize_factor); 
+
+    //downsampled.push_back(array(orignal.row_size() / resize_factor, 
+    //                            orignal.col_size() / resize_factor,
+    //                            orignal.depth_size() / resize_factor)); 
   }
 
   void 
