@@ -84,11 +84,11 @@ public:
   
   void process_blocks() {
     std::vector<std::thread> workers;
-    uint32_t num_of_blocks = q.size() / NUMBER_OF_THREADS;
+    uint32_t num_of_blocks_pre_thread = q.size() / NUMBER_OF_THREADS;
     uint32_t remaining_blocks = q.size() % NUMBER_OF_THREADS;
 
     for (uint32_t i = 0; i < NUMBER_OF_THREADS; i++) {
-      uint32_t num_of_blocks_to_process = num_of_blocks;
+      uint32_t num_of_blocks_to_process = num_of_blocks_pre_thread;
       if (i == NUMBER_OF_THREADS-1) {
         num_of_blocks_to_process += remaining_blocks;
       }
