@@ -17,27 +17,23 @@ public:
   uint32_t row;
   uint32_t col;
   uint32_t depth;
-  uint32_t dim;
   uint32_t blocksize;
   block_description(uint32_t downsampled_index_,
                     uint32_t downsampled_block_index_,
                     uint32_t row_,
                     uint32_t col_,
                     uint32_t depth_,
-                    uint32_t dim_,
                     uint32_t blocksize_):  downsampled_index(downsampled_index_),
                                            downsampled_block_index(downsampled_block_index_),
                                            row(row_),
                                            col(col_),
                                            depth(depth_),
-                                           dim(dim_),
                                            blocksize(blocksize_) {}
   block_description(): downsampled_index(0), 
                        downsampled_block_index(0),
                        row(0),
                        col(0),
                        depth(0),
-                       dim(0),
                        blocksize(0) {}
 };
 
@@ -48,6 +44,7 @@ protected:
   std::mutex mtx_queue;
   std::mutex mtx_downsampled;
   std::queue<block_description> q;
+  uint32_t dim;
 
 private:
   virtual void alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) = 0;
@@ -65,13 +62,13 @@ private:
       }
 
       uint32_t mode = 0;
-      if (block.dim == 1) {
+      if (dim == 1) {
         mode = orignal.get_mode_of_block_1d(block.row, 0, block.blocksize);
       }
-      else if (block.dim == 2) {
+      else if (dim == 2) {
         mode = orignal.get_mode_of_block_2d(block.row, block.col, block.blocksize, block.blocksize);
       }
-      else if (block.dim == 3) {
+      else if (dim == 3) {
         mode = orignal.get_mode_of_block_3d(block.row, block.col, block.depth, block.blocksize, block.blocksize, block.blocksize);
       }
 
@@ -109,9 +106,9 @@ private:
   }
 
 public:
-  BlockDownSampler(uint32_t L1): orignal(L1) {}
-  BlockDownSampler(uint32_t L1, uint32_t L2): orignal(L1, L2) {}
-  BlockDownSampler(uint32_t L1, uint32_t L2, uint32_t L3): orignal(L1, L2, L3) {}
+  BlockDownSampler(uint32_t L1): orignal(L1), dim(1) {}
+  BlockDownSampler(uint32_t L1, uint32_t L2): orignal(L1, L2), dim(2) {}
+  BlockDownSampler(uint32_t L1, uint32_t L2, uint32_t L3): orignal(L1, L2, L3), dim(3) {}
   virtual ~BlockDownSampler() {}
 
   void
@@ -166,7 +163,7 @@ private:
     uint32_t index = 0;
 
     for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
-      q.push(block_description(downsampled_index, index, row, 0, 0, 1, blocksize));
+      q.push(block_description(downsampled_index, index, row, 0, 0, blocksize));
       index++;
     }
   }
@@ -199,7 +196,7 @@ private:
 
     for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
       for (uint32_t col = 0; col < orignal.col_size(); col+=blocksize) {
-        q.push(block_description(downsampled_index, index, row, col, 0, 2, blocksize));
+        q.push(block_description(downsampled_index, index, row, col, 0, blocksize));
         index++;
       }
     }
@@ -236,7 +233,7 @@ private:
     for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
       for (uint32_t col = 0; col < orignal.col_size(); col+=blocksize) {
         for (uint32_t depth = 0; col < orignal.depth_size(); depth+=blocksize) {
-          q.push(block_description(downsampled_index, index, row, col, depth, 3, blocksize));
+          q.push(block_description(downsampled_index, index, row, col, depth, blocksize));
           index++;
         }
       }
