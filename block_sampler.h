@@ -71,7 +71,8 @@ private:
     }
   }
 
-  void process_blocks() {
+  void 
+  process_blocks() {
     std::vector<std::thread> workers;
     uint32_t num_of_blocks_pre_thread = q.size() / NUMBER_OF_THREADS;
     uint32_t remaining_blocks = q.size() % NUMBER_OF_THREADS;
