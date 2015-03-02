@@ -8,7 +8,7 @@ LFLAGS = -Wall $(DEBUG) -lpthread
 main : $(OBJS)
 	$(CC) $(OBJS) -o main $(LFLAGS)
 
-main.o : block_sampler.h
+main.o : block_sampler.h array.h
 	$(CC) $(CFLAGS) main.cpp
 	    
 clean:
