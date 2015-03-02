@@ -8,7 +8,7 @@
 #include <queue>
 #include "array.h"
 
-const int NUMBER_OF_THREADS = 2;
+const uint32_t NUMBER_OF_THREADS = 2;
 
 class block_description {
 public:
@@ -107,7 +107,7 @@ public:
   }
 
   void
-  downsample(int l) {
+  downsample(uint32_t l) {
     uint32_t blocksize = 2;
     downsampled.resize(l);
 
@@ -134,7 +134,7 @@ public:
   
   void 
   print_downsampled() {
-    for (int i = 0; i < downsampled.size(); i++) {
+    for (uint32_t i = 0; i < downsampled.size(); i++) {
       downsampled[i].print();
     }
   }
@@ -152,7 +152,7 @@ private:
   insert_blocks_to_queue(uint32_t downsampled_index, uint32_t blocksize) {
     uint32_t index = 0;
 
-    for (int row = 0; row < orignal.row_size(); row+=blocksize) {
+    for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
       q.push(block_description(downsampled_index, index, row, 0, 0, blocksize));
       index++;
     }
@@ -184,8 +184,8 @@ private:
   insert_blocks_to_queue(uint32_t downsampled_index, uint32_t blocksize) {
     uint32_t index = 0;
 
-    for (int row = 0; row < orignal.row_size(); row+=blocksize) {
-      for (int col = 0; col < orignal.col_size(); col+=blocksize) {
+    for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
+      for (uint32_t col = 0; col < orignal.col_size(); col+=blocksize) {
         q.push(block_description(downsampled_index, index, row, col, 0, blocksize));
         index++;
       }
@@ -220,9 +220,9 @@ private:
   insert_blocks_to_queue(uint32_t downsampled_index, uint32_t blocksize) {
     uint32_t index = 0;
 
-    for (int row = 0; row < orignal.row_size(); row+=blocksize) {
-      for (int col = 0; col < orignal.col_size(); col+=blocksize) {
-        for (int depth = 0; col < orignal.depth_size(); depth+=blocksize) {
+    for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
+      for (uint32_t col = 0; col < orignal.col_size(); col+=blocksize) {
+        for (uint32_t depth = 0; col < orignal.depth_size(); depth+=blocksize) {
           q.push(block_description(downsampled_index, index, row, col, depth, blocksize));
           index++;
         }
