@@ -10,7 +10,7 @@
 #include "array.h"
 
 #define BENCHMARKING
-const uint32_t NUMBER_OF_THREADS = 2;
+const uint32_t NUMBER_OF_THREADS = 3;
 
 class block_description {
 public:
@@ -163,7 +163,7 @@ public:
 #ifdef BENCHMARKING
   auto end = std::chrono::steady_clock::now();
   auto diff = end - start; 
-  std::cerr << '\n' << std::chrono::duration <double, std::milli> (diff).count() << "\n\n";
+  std::cerr << "\nbenchmark: " << std::chrono::duration <double, std::milli> (diff).count() << "\n\n";
 #endif
 
     downsampled.resize(j+1);
