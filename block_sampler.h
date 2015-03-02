@@ -8,7 +8,7 @@
 #include <queue>
 #include "array.h"
 
-const int NUMBER_OF_THREADS = 1;
+const int NUMBER_OF_THREADS = 2;
 
 class block_description {
 public:
@@ -17,27 +17,23 @@ public:
   uint32_t row;
   uint32_t col;
   uint32_t depth;
-  uint32_t dim;
   uint32_t blocksize;
   block_description(uint32_t downsampled_index_,
                     uint32_t downsampled_block_index_,
                     uint32_t row_,
                     uint32_t col_,
                     uint32_t depth_,
-                    uint32_t dim_,
                     uint32_t blocksize_):  downsampled_index(downsampled_index_),
                                            downsampled_block_index(downsampled_block_index_),
                                            row(row_),
                                            col(col_),
                                            depth(depth_),
-                                           dim(dim_),
                                            blocksize(blocksize_) {}
   block_description(): downsampled_index(0), 
                        downsampled_block_index(0),
                        row(0),
                        col(0),
                        depth(0),
-                       dim(0),
                        blocksize(0) {}
 };
 
@@ -156,7 +152,7 @@ private:
     uint32_t index = 0;
 
     for (int row = 0; row < orignal.row_size(); row+=blocksize) {
-      q.push(block_description(downsampled_index, index, row, 0, 0, 1, blocksize));
+      q.push(block_description(downsampled_index, index, row, 0, 0, blocksize));
       index++;
     }
   }
@@ -189,7 +185,7 @@ private:
 
     for (int row = 0; row < orignal.row_size(); row+=blocksize) {
       for (int col = 0; col < orignal.col_size(); col+=blocksize) {
-        q.push(block_description(downsampled_index, index, row, col, 0, 2, blocksize));
+        q.push(block_description(downsampled_index, index, row, col, 0, blocksize));
         index++;
       }
     }
@@ -226,7 +222,7 @@ private:
     for (int row = 0; row < orignal.row_size(); row+=blocksize) {
       for (int col = 0; col < orignal.col_size(); col+=blocksize) {
         for (int depth = 0; col < orignal.depth_size(); depth+=blocksize) {
-          q.push(block_description(downsampled_index, index, row, col, depth, 3, blocksize));
+          q.push(block_description(downsampled_index, index, row, col, depth, blocksize));
           index++;
         }
       }
