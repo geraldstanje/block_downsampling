@@ -71,17 +71,6 @@ private:
     }
   }
 
-public:
-  BlockDownSampler(uint32_t L1): orignal(L1) {}
-  BlockDownSampler(uint32_t L1, uint32_t L2): orignal(L1, L2) {}
-  BlockDownSampler(uint32_t L1, uint32_t L2, uint32_t L3): orignal(L1, L2, L3) {}
-  virtual ~BlockDownSampler() {}
-
-  void
-  insert(uint32_t *in) {
-    orignal.insert(in);
-  }
-  
   void process_blocks() {
     std::vector<std::thread> workers;
     uint32_t num_of_blocks_pre_thread = q.size() / NUMBER_OF_THREADS;
@@ -103,6 +92,17 @@ public:
         t.join();
       }
     }
+  }
+
+public:
+  BlockDownSampler(uint32_t L1): orignal(L1) {}
+  BlockDownSampler(uint32_t L1, uint32_t L2): orignal(L1, L2) {}
+  BlockDownSampler(uint32_t L1, uint32_t L2, uint32_t L3): orignal(L1, L2, L3) {}
+  virtual ~BlockDownSampler() {}
+
+  void
+  insert(uint32_t *in) {
+    orignal.insert(in);
   }
 
   void
