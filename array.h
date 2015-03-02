@@ -5,6 +5,7 @@
 #include <vector>
 #include <algorithm>
 #include <thread>
+#include <cassert>
 
 class array {
 private:
@@ -49,16 +50,19 @@ public:
   
   uint32_t 
   row_size() {
+    assert(sizes.size() > 0);
     return sizes[0];
   }
   
   uint32_t 
   col_size() {
+    assert(sizes.size() > 1);
     return sizes[1];
   }
   
   uint32_t
   depth_size() {
+    assert(sizes.size() > 2);
     return sizes[2];
   }
 
