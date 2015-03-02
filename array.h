@@ -68,6 +68,7 @@ public:
 
   uint32_t 
   &operator[](uint32_t index) {
+    assert(index < data.size());
     return data[index];
   }
   
