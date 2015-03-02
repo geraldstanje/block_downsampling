@@ -10,7 +10,7 @@
 #include "array.h"
 
 #define BENCHMARKING
-const uint32_t NUMBER_OF_THREADS = 3;
+const uint32_t NUMBER_OF_THREADS = 2;
 
 class block_description {
 public:
@@ -44,7 +44,6 @@ protected:
   array orignal;
   std::vector<array> downsampled;
   std::mutex mtx_queue;
-  std::mutex mtx_downsampled;
   std::queue<block_description> q;
   uint32_t dim;
 
@@ -74,11 +73,7 @@ private:
         mode = orignal.get_mode_of_block_3d(block.row, block.col, block.depth, block.blocksize, block.blocksize, block.blocksize);
       }
 
-      {
-        std::unique_lock<std::mutex> lck(mtx_downsampled);
-        downsampled[block.downsampled_index][block.downsampled_block_index] = mode;
-      }
-
+      downsampled[block.downsampled_index][block.downsampled_block_index] = mode;
       num_of_blocks--;
     }
   }
