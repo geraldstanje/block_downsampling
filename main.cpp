@@ -2,7 +2,7 @@
 
 int
 main() {
-  BlockDownSampler<8,4> b;
+  BlockDownSampler2d<8,4> b;
   uint32_t data[] = {
       1,1,1,1,1,1,1,1,
       1,2,1,2,1,2,1,2,

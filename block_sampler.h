@@ -9,49 +9,30 @@
 
 #define THREADING
 
-template <size_t L1, const size_t L2>
 class BlockDownSampler {
-private:
+protected:
   array orignal;
   std::vector<array> downsampled;
   std::mutex mtx;
 
-public:
-  BlockDownSampler(): orignal(L1, L2) {}
+private:
+  virtual void alloc_downsampled_img(std::vector<size_t> sizes, uint32_t resize_factor) = 0;
+  virtual void calc_mode_for_all_blocks(uint32_t downsampled_index, uint32_t blocksize) = 0;
+  virtual bool check_stop(uint32_t blocksize) = 0 ;
   
+  void
+  thread_downsample(uint32_t downsampled_index, uint32_t blocksize) {
+    alloc_downsampled_img(orignal.get_sizes(), blocksize);
+    calc_mode_for_all_blocks(downsampled_index, blocksize);
+  }
+
+public:
+  BlockDownSampler(uint32_t L1, uint32_t L2): orignal(L1, L2) {}
+  virtual ~BlockDownSampler() {}
+
   void
   insert(uint32_t *in) {
     orignal.insert(in);
-  }
-  
-  void 
-  alloc_downsampled_img(std::vector<size_t> sizes, uint32_t resize_factor) {
-    downsampled.push_back(array(sizes[0] / resize_factor, 
-                                sizes[1] / resize_factor)); 
-  }
-  
-  void 
-  calc_mode_for_all_blocks(uint32_t downsampled_index, uint32_t blocksize) {
-    uint32_t index = 0;
-    
-    for (int row = 0; row < orignal.row_size(); row+=blocksize) {
-      for (int col = 0; col < orignal.col_size(); col+=blocksize) {
-        uint32_t mode = orignal.get_mode_of_block_2d(row, col, blocksize, blocksize);
-        std::unique_lock<std::mutex> lck(mtx);
-        (downsampled[downsampled_index])[index] = mode;
-        index++;
-      }
-    }
-  }
-  
-  bool
-  check_stop(uint32_t blocksize) {
-    if (orignal.get_sizes()[0]/blocksize == 1 || 
-        orignal.get_sizes()[1]/blocksize == 1) {
-      return true;
-    }
-    
-    return false;
   }
   
   void
@@ -86,12 +67,6 @@ public:
 #endif
   }
   
-  void
-  thread_downsample(uint32_t downsampled_index, uint32_t blocksize) {
-    alloc_downsampled_img(orignal.get_sizes(), blocksize);
-    calc_mode_for_all_blocks(downsampled_index, blocksize);
-  }
-  
   void 
   print_original() {
     orignal.print();
@@ -103,6 +78,43 @@ public:
       downsampled[i].print();
     }
   }
+};
+
+template <size_t L1, const size_t L2>
+class BlockDownSampler2d : public BlockDownSampler {
+private:
+  void 
+  alloc_downsampled_img(std::vector<size_t> sizes, uint32_t resize_factor) {
+    downsampled.push_back(array(sizes[0] / resize_factor, 
+                                sizes[1] / resize_factor)); 
+  }
+
+  void 
+  calc_mode_for_all_blocks(uint32_t downsampled_index, uint32_t blocksize) {
+    uint32_t index = 0;
+    
+    for (int row = 0; row < orignal.row_size(); row+=blocksize) {
+      for (int col = 0; col < orignal.col_size(); col+=blocksize) {
+        uint32_t mode = orignal.get_mode_of_block_2d(row, col, blocksize, blocksize);
+        std::unique_lock<std::mutex> lck(mtx);
+        (downsampled[downsampled_index])[index] = mode;
+        index++;
+      }
+    }
+  }
+
+  bool
+  check_stop(uint32_t blocksize) {
+    if (orignal.get_sizes()[0]/blocksize == 1 || 
+        orignal.get_sizes()[1]/blocksize == 1) {
+      return true;
+    }
+    
+    return false;
+  }
+
+public:
+  BlockDownSampler2d(): BlockDownSampler(L1, L2) {}
 };
 
 #endif
