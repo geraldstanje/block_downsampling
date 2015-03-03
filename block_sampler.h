@@ -50,7 +50,7 @@ class BlockDownSampler {
 protected:
   array orignal;
   std::vector<array> downsampled;
-  std::vector<std::queue<block_description>> vec_queue; // each task has a queue of blocks to process
+  std::vector<std::queue<block_description>> vec_queue; // each task has a queue has a number of blocks to process
   uint32_t dim;
 
 private:
