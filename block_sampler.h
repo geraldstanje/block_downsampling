@@ -51,7 +51,6 @@ class BlockDownSampler {
 protected:
   uint32_t num_of_threads;
   array orignal;
-  std::mutex mu;
   std::vector<array> downsampled;
   uint32_t dim;
   boost::lockfree::queue<block_description> block_queue;
