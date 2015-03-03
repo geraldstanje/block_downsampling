@@ -56,7 +56,11 @@ protected:
 private:
   virtual void alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) = 0;
   virtual bool can_stop(uint32_t blocksize) = 0;
-  virtual void insert_blocks_to_queue(std::queue<block_description> &my_queue, uint32_t num_of_blocks_pre_thread, uint32_t num_of_blocks, uint32_t downsampled_index, uint32_t blocksize) = 0;
+  virtual void insert_blocks_to_queue(std::queue<block_description> &my_queue, 
+                                      const uint32_t num_of_blocks_pre_thread, 
+                                      const uint32_t num_of_blocks, 
+                                      const uint32_t downsampled_index, 
+                                      const uint32_t blocksize) = 0;
   virtual uint32_t get_num_of_blocks(uint32_t l) = 0;
 
   void
@@ -195,7 +199,11 @@ private:
   }
 
   void 
-  insert_blocks_to_queue(std::queue<block_description> &my_queue, uint32_t num_of_blocks_pre_thread, uint32_t num_of_blocks, uint32_t downsampled_index, uint32_t blocksize) {
+  insert_blocks_to_queue(std::queue<block_description> &my_queue, 
+                         const uint32_t num_of_blocks_pre_thread, 
+                         const uint32_t num_of_blocks, 
+                         const uint32_t downsampled_index, 
+                         const uint32_t blocksize) {
   }
 
   bool
@@ -243,7 +251,11 @@ private:
  }
 
  void 
-  insert_blocks_to_queue(std::queue<block_description> &my_queue, uint32_t num_of_blocks_pre_thread, uint32_t num_of_blocks, uint32_t downsampled_index, uint32_t blocksize) {
+  insert_blocks_to_queue(std::queue<block_description> &my_queue, 
+                         const uint32_t num_of_blocks_pre_thread, 
+                         const uint32_t num_of_blocks, 
+                         const uint32_t downsampled_index, 
+                         const uint32_t blocksize) {
     uint32_t index = 0;
 
     for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
@@ -288,7 +300,11 @@ private:
   }
 
   void 
-  insert_blocks_to_queue(std::queue<block_description> &my_queue, uint32_t num_of_blocks_pre_thread, uint32_t num_of_blocks, uint32_t downsampled_index, uint32_t blocksize) {
+  insert_blocks_to_queue(std::queue<block_description> &my_queue, 
+                         const uint32_t num_of_blocks_pre_thread, 
+                         const uint32_t num_of_blocks, 
+                         const uint32_t downsampled_index, 
+                         const uint32_t blocksize) {
   }
 
   bool
