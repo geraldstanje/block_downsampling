@@ -9,7 +9,7 @@
 #include "array.h"
 
 #define BENCHMARKING
-const uint32_t NUMBER_OF_THREADS = 10;
+const uint32_t NUMBER_OF_THREADS = 1;
 
 class block_description {
 public:
@@ -50,7 +50,7 @@ protected:
   uint32_t num_of_threads;
   array orignal;
   std::vector<array> downsampled;
-  std::vector<std::vector<block_description>> thread_vec; // each task has a queue has a number of blocks to process
+  std::vector<std::vector<block_description>> thread_vec; // each thread has a vector of blocks to process
   uint32_t dim;
 
 private:
