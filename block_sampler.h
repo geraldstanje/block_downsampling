@@ -67,11 +67,7 @@ private:
     block_description block;
     uint32_t mode = 0;
 
-    while (true) {
-      if (block_queue.empty()) {
-        break;
-      }
-
+    while (!block_queue.empty()) {
       block_queue.pop(block);
 
       if (dim == 1) {
