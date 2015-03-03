@@ -69,7 +69,7 @@ private:
 
     while (true) {
       if (block_queue.empty()) {
-        return;
+        break;
       }
 
       block_queue.pop(block);
