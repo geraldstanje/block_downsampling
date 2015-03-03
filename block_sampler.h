@@ -59,8 +59,8 @@ protected:
 private:
   virtual void alloc_downsampled_img(uint32_t downsampled_index, uint32_t resize_factor) = 0;
   virtual bool can_stop(uint32_t blocksize) = 0;
-  virtual void insert_blocks_thread_vec(const uint32_t downsampled_index, 
-                                        const uint32_t blocksize) = 0;
+  virtual void insert_blocks_to_queue(const uint32_t downsampled_index, 
+                                      const uint32_t blocksize) = 0;
 
   void
   thread_downsample() {
@@ -129,7 +129,7 @@ public:
 
     for (j = 0; j < l; j++) {
       alloc_downsampled_img(j, blocksize);
-      insert_blocks_thread_vec(j, blocksize);
+      insert_blocks_to_queue(j, blocksize);
 
       if (can_stop(blocksize)) {
         break;
@@ -175,8 +175,14 @@ private:
   }
 
   void 
-  insert_blocks_thread_vec(const uint32_t downsampled_index, 
-                           const uint32_t blocksize) {
+  insert_blocks_to_queue(const uint32_t downsampled_index, 
+                         const uint32_t blocksize) {
+    uint32_t index = 0;
+
+    for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
+      block_queue.push(block_description(downsampled_index, index, row, 0, 0, blocksize));
+      index++;
+    }
   }
 
   bool
@@ -202,8 +208,8 @@ private:
   }
 
  void
- insert_blocks_thread_vec(const uint32_t downsampled_index, 
-                          const uint32_t blocksize)
+ insert_blocks_to_queue(const uint32_t downsampled_index, 
+                        const uint32_t blocksize)
   {
     uint32_t index = 0;
 
@@ -240,8 +246,18 @@ private:
   }
 
   void 
-  insert_blocks_thread_vec(const uint32_t downsampled_index, 
-                           const uint32_t blocksize) {
+  insert_blocks_to_queue(const uint32_t downsampled_index, 
+                         const uint32_t blocksize) {
+    uint32_t index = 0;
+
+    for (uint32_t row = 0; row < orignal.row_size(); row+=blocksize) {
+      for (uint32_t col = 0; col < orignal.col_size(); col+=blocksize) {
+        for (uint32_t depth = 0; col < orignal.depth_size(); depth+=blocksize) {
+          block_queue.push(block_description(downsampled_index, index, row, col, depth, blocksize));
+          index++;
+        }
+      }
+    }
   }
 
   bool
