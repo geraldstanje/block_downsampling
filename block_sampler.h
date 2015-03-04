@@ -138,15 +138,15 @@ public:
     }
 
 #ifdef BENCHMARKING
-  auto start = std::chrono::steady_clock::now();
+    auto start = std::chrono::steady_clock::now();
 #endif
 
     process_blocks();
 
 #ifdef BENCHMARKING
-  auto end = std::chrono::steady_clock::now();
-  auto diff = end - start; 
-  std::cerr << "\nbenchmark: " << std::chrono::duration <double, std::milli> (diff).count() << "\n\n";
+    auto end = std::chrono::steady_clock::now();
+    auto diff = end - start; 
+    std::cerr << "\nbenchmark: " << std::chrono::duration <double, std::milli> (diff).count() << "\n\n";
 #endif
 
     downsampled.resize(j+1);
